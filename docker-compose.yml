@@ -14,4 +14,4 @@ services:
 
 volumes:
   postgres-task-manager:
-  localstack-houses:
+  localstack-task-manager:

@@ -9,7 +9,7 @@ localPG =
   defaultConnectInfo
     { connectHost = "0.0.0.0",
       connectDatabase = "task-manager",
-      connectUser = "postgres",
+      connectUser = "teste",
       connectPassword = "postgres"
     }
 

@@ -6,12 +6,9 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - postgres-task-manager:/var/lib/postgresql/data
+      - ./db/init-scripts:/docker-entrypoint-initdb.d
     environment:
       POSTGRES_DB: task-manager
-      POSTGRES_USER: postgres
+      POSTGRES_USER: teste
       POSTGRES_PASSWORD: postgres
 
-volumes:
-  postgres-task-manager:
-  localstack-task-manager:

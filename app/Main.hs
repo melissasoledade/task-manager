@@ -6,7 +6,7 @@ import Lib
 localPG :: ConnectInfo
 localPG =
   defaultConnectInfo
-    { connectHost = "localhost",
+    { connectHost = "0.0.0.0",
       connectDatabase = "docker",
       connectUser = "docker",
       connectPassword = "docker"

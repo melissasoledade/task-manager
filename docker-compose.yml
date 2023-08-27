@@ -9,8 +9,8 @@ services:
       - postgres-task-manager:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: task-manager
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: admin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
 
 volumes:
   postgres-task-manager:

@@ -15,7 +15,7 @@ $(function() {
         cpf: cpf,
         username: username,
         password: password,
-        userHash: "",
+        userhash: "",
         userId: 0
       }),
       success: function (data) {

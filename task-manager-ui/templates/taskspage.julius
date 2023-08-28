@@ -3,13 +3,12 @@ $(function() {
   var getFunctionPatchVal = function(val, id) {
     return function() {
       $.ajax({
-          url: url + "/" + id,
+          url: url + "/" + id + "?taskStatus=" + val,
           type: 'PATCH',
           data: JSON.stringify({
-            "taskStatus": val
           }),
           contentType: "application/json",
-          headers: {"x-userID": sessionStorage['session']},
+          headers: {"X-userID": sessionStorage['session']},
           success: function (data) {
             getTasks();
           },

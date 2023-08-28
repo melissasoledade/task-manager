@@ -28,3 +28,5 @@ routes :: Connection -> IO ()
 routes conn = scotty 8080 $ do
   get "/" $ do
     html "Olá, mundo!"
+
+  get "/tasks" $ getTasks conn

@@ -5,6 +5,7 @@ module Lib
       getTasks,
       createUser,
       hashPassword,
+      createTask,
     ) where
 
 
@@ -85,7 +86,6 @@ instance FromJSON CreatedUser where
 instance FromRow CreatedUser where
     fromRow = CreatedUser <$> field <*> field <*> field <*> field <*> pure ""
 
-
 hashPassword :: String -> String
 hashPassword password = show (hashWith SHA256 (pack password))
 
@@ -97,6 +97,9 @@ getTasks conn = do
 
 getUserByCPF :: Connection -> String -> IO [CreatedUser]
 getUserByCPF conn cpf = query conn "SELECT userid, cpf, username, userhash FROM users WHERE cpf = ?" (Only cpf)
+
+getTaskByUserId :: Connection -> Int -> IO [Task]
+getTaskByUserId conn userId = query conn "SELECT taskid, name, description, priority, taskstatus, taskuserid FROM tasks WHERE taskuserid = ?" (Only userId)
 
 createUser :: Connection -> ActionM ()
 createUser conn = do
@@ -114,3 +117,28 @@ createUser conn = do
             S.json $ object ["user" .= user]
         else do
             status status400
+
+
+createTask :: Connection -> ActionM ()
+createTask conn = do
+    (Task _ _name _description _priority _taskStatus _taskUserId) <- jsonData
+    let result = execute
+                    conn
+                    "INSERT INTO tasks (name, description, priority, taskstatus, taskuserid) VALUES (?, ?, ?, ?, ?)"
+                    (_name, _description, _priority, _taskStatus, _taskUserId)
+    n <- liftIO result
+    if n > 0
+        then do
+            tasks <- liftIO $ getTaskByUserId conn _taskUserId
+            status status201
+            S.json $ object ["tasks" .= tasks]
+        else do
+            status status400
+
+
+-- generateJwt :: CreatedUser -> String
+-- generateJwt (CreatedUser _userId _cpf _username _userhash _) = do
+
+-- getLoggedUser :: Connection -> ActionM ()
+-- getLoggedUser conn = do
+--     (CreatedUser _ _cpf _username _ _password) <- jsonData

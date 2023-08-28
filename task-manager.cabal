@@ -37,11 +37,13 @@ library
     , bytestring
     , cryptonite
     , http-types
+    , jwt
     , memory
     , mtl
     , postgresql-simple ==0.6.4
     , scotty ==0.12.1
     , text
+    , time
   default-language: Haskell2010
 
 executable task-manager-exe
@@ -57,12 +59,14 @@ executable task-manager-exe
     , bytestring
     , cryptonite
     , http-types
+    , jwt
     , memory
     , mtl
     , postgresql-simple ==0.6.4
     , scotty ==0.12.1
     , task-manager
     , text
+    , time
   default-language: Haskell2010
 
 test-suite task-manager-test
@@ -79,10 +83,12 @@ test-suite task-manager-test
     , bytestring
     , cryptonite
     , http-types
+    , jwt
     , memory
     , mtl
     , postgresql-simple ==0.6.4
     , scotty ==0.12.1
     , task-manager
     , text
+    , time
   default-language: Haskell2010

@@ -33,3 +33,7 @@ routes conn = scotty 8080 $ do
   get "/tasks" $ getTasks conn
 
   post "/cadastrar" $ createUser conn
+
+  post "/tasks" $ createTask conn
+
+  -- post "/login" $ getLoggedUser conn

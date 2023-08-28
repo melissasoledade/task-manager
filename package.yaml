@@ -30,6 +30,8 @@ dependencies:
 - cryptonite
 - memory
 - bytestring
+- jwt
+- time
 
 ghc-options:
 - -Wall

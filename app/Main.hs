@@ -26,15 +26,12 @@ main = do
 
 routes :: Connection -> IO ()
 routes conn = scotty 8080 $ do
-  get "/" $ do
-    html "Olá, mundo!"
-
   get "/tasks" $ getTasks conn
 
   post "/cadastrar" $ createUser conn
 
   post "/tasks" $ createTask conn
 
-  -- post "/login" $ getLoggedUser conn
+  post "/login" $ getLoggedUser conn
 
   patch "/tasks/:id" $ updateTask conn

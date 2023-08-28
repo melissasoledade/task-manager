@@ -4,14 +4,15 @@ module Lib
     (
       getTasks,
       createUser,
-      hashPassword,
       createTask,
       updateTask,
+      getLoggedUser,
     ) where
 
 
 import Data.Aeson
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Data.Text.Encoding (encodeUtf8)
 import Crypto.Hash (hashWith, SHA256(..))
 import Data.ByteArray.Encoding (convertToBase, Base(..))
@@ -19,9 +20,9 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (pack)
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.FromRow
-import Web.Scotty (ActionM, jsonData, param, post, status, text)
+import Web.Scotty (ActionM, jsonData, param, post, status, text, header)
 import qualified Web.Scotty as S
-import Network.HTTP.Types.Status (Status, status200, status201, status204, status400)
+import Network.HTTP.Types.Status (Status, status200, status201, status400)
 import Control.Monad.IO.Class (liftIO)
 
 -- Armazena uma tarefa
@@ -98,13 +99,6 @@ instance FromRow CreatedUser where
 hashPassword :: String -> String
 hashPassword password = show (hashWith SHA256 (pack password))
 
--- GET de tarefas, lista todas as tarefas do banco
-getTasks :: Connection -> ActionM ()
-getTasks conn = do
-    tasks <- (liftIO $ query_ conn "SELECT * FROM tasks") :: ActionM [Task]
-    status status200
-    S.json $ object ["tasks" .= tasks]
-
 -- Busca usuário por CPF
 getUserByCPF :: Connection -> String -> IO [CreatedUser]
 getUserByCPF conn cpf = query conn "SELECT userid, cpf, username, userhash FROM users WHERE cpf = ?" (Only cpf)
@@ -112,6 +106,25 @@ getUserByCPF conn cpf = query conn "SELECT userid, cpf, username, userhash FROM 
 -- Busca tarefa por userId
 getTaskByUserId :: Connection -> Int -> IO [Task]
 getTaskByUserId conn userId = query conn "SELECT taskid, name, description, priority, taskstatus, taskuserid FROM tasks WHERE taskuserid = ?" (Only userId)
+
+-- Busca usuário na tabela users pelo userId
+userExists :: Connection -> Int -> IO Bool
+userExists conn _taskId = do
+  [Only n] <- query conn "SELECT COUNT(*) FROM users WHERE userid = ?" (Only _taskId) :: IO [Only Int]
+  return $ n > 0
+
+-- Verifica se uma tarefa existe pelo seu id
+taskExists :: Connection -> Int -> IO Bool
+taskExists conn _taskId = do
+  [Only n] <- query conn "SELECT COUNT(*) FROM tasks WHERE taskid = ?" (Only _taskId) :: IO [Only Int]
+  return $ n > 0
+
+-- GET de tarefas, lista todas as tarefas do banco
+getTasks :: Connection -> ActionM ()
+getTasks conn = do
+    tasks <- (liftIO $ query_ conn "SELECT * FROM tasks") :: ActionM [Task]
+    status status200
+    S.json $ object ["tasks" .= tasks]
 
 -- Cria um novo usuário. Armazena seus dados + hash de senha
 createUser :: Connection -> ActionM ()
@@ -148,12 +161,6 @@ createTask conn = do
         else do
             status status400
 
--- Verifica se uma tarefa existe pelo seu id
-taskExists :: Connection -> Int -> IO Bool
-taskExists conn _taskId = do
-  [Only n] <- query conn "SELECT COUNT(*) FROM tasks WHERE taskid = ?" (Only _taskId) :: IO [Only Int]
-  return $ n > 0
-
 -- Atualiza uma tarefa
 updateTask :: Connection -> ActionM ()
 updateTask conn = do
@@ -178,11 +185,22 @@ updateTask conn = do
                     status status400
                     S.json $ object ["error" .= ("Could not update task" :: String)]
 
-
-
--- generateJwt :: CreatedUser -> String
--- generateJwt (CreatedUser _userId _cpf _username _userhash _) = do
-
--- getLoggedUser :: Connection -> ActionM ()
--- getLoggedUser conn = do
---     (CreatedUser _ _cpf _username _ _password) <- jsonData
+-- Retorna o userId do usuário. Tentamos algumas implementações para gerar um JWT, mas não conseguimos finalizar
+-- O JWT seria gerado com um set de <username, userid> + uma chave RSA
+getLoggedUser :: Connection -> ActionM ()
+getLoggedUser conn = do
+    maybeAuthHeader <- header "x-userid"
+    case maybeAuthHeader of
+            Just authHeaderValue -> do
+                let authUserId = read $ TL.unpack authHeaderValue :: Int
+                exists <- liftIO $ userExists conn authUserId
+                if exists
+                    then do
+                        status status200
+                        S.json $ object ["userId" .= (authUserId :: Int)]
+                    else do
+                        status status400
+                        S.json $ object ["error" .= ("Could not find user" :: String)]
+            Nothing -> do
+                status status400
+                S.json $ object ["error" .= ("Could not find header" :: String)]

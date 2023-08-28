@@ -122,9 +122,13 @@ taskExists conn _taskId = do
 -- GET de tarefas, lista todas as tarefas do banco
 getTasks :: Connection -> ActionM ()
 getTasks conn = do
-    tasks <- (liftIO $ query_ conn "SELECT * FROM tasks") :: ActionM [Task]
-    status status200
-    S.json $ object ["tasks" .= tasks]
+    header <- verifyHeader conn
+    if not header then do
+        status status400
+    else do
+        tasks <- (liftIO $ query_ conn "SELECT * FROM tasks") :: ActionM [Task]
+        status status200
+        S.json $ object ["tasks" .= tasks]
 
 -- Cria um novo usuário. Armazena seus dados + hash de senha
 createUser :: Connection -> ActionM ()
@@ -140,67 +144,84 @@ createUser conn = do
         then do
             user <- liftIO $ getUserByCPF conn _cpf
             status status201
-            S.json $ object ["user" .= user]
         else do
             status status400
 
 -- Cria uma nova tarefa
 createTask :: Connection -> ActionM ()
 createTask conn = do
-    (Task _ _name _description _priority _taskStatus _taskUserId) <- jsonData
-    let result = execute
-                    conn
-                    "INSERT INTO tasks (name, description, priority, taskstatus, taskuserid) VALUES (?, ?, ?, ?, ?)"
-                    (_name, _description, _priority, _taskStatus, _taskUserId)
-    n <- liftIO result
-    if n > 0
-        then do
-            tasks <- liftIO $ getTaskByUserId conn _taskUserId
-            status status201
-            S.json $ object ["tasks" .= tasks]
-        else do
-            status status400
+    header <- verifyHeader conn
+    if not header then do
+        status status400
+    else do
+        (Task _ _name _description _priority _taskStatus _taskUserId) <- jsonData
+        let result = execute
+                        conn
+                        "INSERT INTO tasks (name, description, priority, taskstatus, taskuserid) VALUES (?, ?, ?, ?, ?)"
+                        (_name, _description, _priority, _taskStatus, _taskUserId)
+        n <- liftIO result
+        if n > 0
+            then do
+                tasks <- liftIO $ getTaskByUserId conn _taskUserId
+                status status201
+                S.json $ object ["tasks" .= tasks]
+            else do
+                status status400
 
 -- Atualiza uma tarefa
 updateTask :: Connection -> ActionM ()
 updateTask conn = do
-    _taskId <- param "id" :: ActionM Int
-    _taskStatus <- param "taskStatus" :: ActionM String
-    exists <- liftIO $ taskExists conn _taskId
-    if not exists
-        then do
-            status status400
-            S.json $ object ["error" .= ("Task not found" :: String)]
-        else do
-            let result = execute
-                    conn
-                    "UPDATE tasks SET taskstatus = ? WHERE taskid = ?"
-                    (_taskStatus, _taskId)
-            n <- liftIO result
-            if n > 0
-                then do
-                    status status200
-                    S.json $ object ["message" .= (_taskStatus :: String)]
-                else do
-                    status status400
-                    S.json $ object ["error" .= ("Could not update task" :: String)]
-
--- Retorna o userId do usuário. Tentamos algumas implementações para gerar um JWT, mas não conseguimos finalizar
--- O JWT seria gerado com um set de <username, userid> + uma chave RSA
-getLoggedUser :: Connection -> ActionM ()
-getLoggedUser conn = do
-    maybeAuthHeader <- header "x-userid"
-    case maybeAuthHeader of
-            Just authHeaderValue -> do
-                let authUserId = read $ TL.unpack authHeaderValue :: Int
-                exists <- liftIO $ userExists conn authUserId
-                if exists
+    header <- verifyHeader conn
+    if not header then do
+        status status400
+    else do
+        _taskId <- param "id" :: ActionM Int
+        _taskStatus <- param "taskStatus" :: ActionM String
+        exists <- liftIO $ taskExists conn _taskId
+        if not exists
+            then do
+                status status400
+                S.json $ object ["error" .= ("Task not found" :: String)]
+            else do
+                let result = execute
+                        conn
+                        "UPDATE tasks SET taskstatus = ? WHERE taskid = ?"
+                        (_taskStatus, _taskId)
+                n <- liftIO result
+                if n > 0
                     then do
                         status status200
-                        S.json $ object ["userId" .= (authUserId :: Int)]
+                        S.json $ object ["message" .= (_taskStatus :: String)]
                     else do
                         status status400
-                        S.json $ object ["error" .= ("Could not find user" :: String)]
-            Nothing -> do
-                status status400
-                S.json $ object ["error" .= ("Could not find header" :: String)]
+                        S.json $ object ["error" .= ("Could not update task" :: String)]
+
+-- Verifica o header da requisição. Verifica se o userId do usuário logado está presente no header
+verifyHeader :: Connection -> ActionM Bool
+verifyHeader conn = do
+    maybeAuthHeader <- header "x-userid"
+    case maybeAuthHeader of
+        Just authHeaderValue -> do
+            let authUserId = read $ TL.unpack authHeaderValue :: Int
+            exists <- liftIO $ userExists conn authUserId
+            return exists
+        Nothing -> return False
+
+-- Verifica as credenciais do usuário e retorna o seu userId.
+-- Num ambiente produtivo, um jwt assinado contendo as informações do usuário seria retornado para viabilizar
+-- a autenticação do usuário ao front
+getLoggedUser :: Connection -> ActionM ()
+getLoggedUser conn = do
+    (CreatedUser _ _cpfLogin _usernameLogin _ _passwordLogin) <- jsonData
+    userList <- liftIO $ getUserByCPF conn _cpfLogin
+    if null userList
+    then do
+        status status400
+        S.json $ object ["error" .= ("User not found" :: String)]
+    else if userhash (head userList) == hashPassword _passwordLogin && _usernameLogin == username (head userList)
+        then do
+        status status200
+        S.json $ object ["userId" .= (show $ userId $ head userList :: String)]
+        else do
+        status status400
+        S.json $ object ["error" .= ("Login error" :: String)]

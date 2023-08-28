@@ -4,14 +4,17 @@ module Lib
     (
       getTasks,
       createUser,
+      hashPassword,
     ) where
 
 
 import Data.Aeson
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Crypto.Hash (hash, SHA256)
+import Crypto.Hash (hashWith, SHA256(..))
 import Data.ByteArray.Encoding (convertToBase, Base(..))
+import Data.ByteString (ByteString)
+import Data.ByteString.Char8 (pack)
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.FromRow
 import Web.Scotty (ActionM, jsonData, param, post, status, text)
@@ -58,10 +61,11 @@ data CreatedUser = CreatedUser
     , cpf :: String
     , username :: String
     , userhash :: String
+    , password :: String
     }
 
 instance ToJSON CreatedUser where
-  toJSON (CreatedUser userId cpf username userhash) =
+  toJSON (CreatedUser userId cpf username userhash password) =
     object
       [ "userId" .= userId
       , "cpf" .= cpf
@@ -69,26 +73,21 @@ instance ToJSON CreatedUser where
       , "userhash" .= userhash
       ]
 
+instance FromJSON CreatedUser where
+  parseJSON (Object o) =
+    CreatedUser <$> o .:? "userId" .!= 0
+      <*> o .: "cpf"
+      <*> o .: "username"
+      <*> o .: "userhash"
+      <*> o .: "password"
+  parseJSON _ = fail "Expected an object for CreatedUser"
+
 instance FromRow CreatedUser where
-    fromRow = CreatedUser <$> field <*> field <*> field <*> field
-
-data User = User
-    { reqCpf :: String
-    , reqUsername :: String
-    , password:: String
-    }
-
-instance FromRow User where
-    fromRow = User <$> field <*> field <*> field
-
-instance FromJSON User where
-    parseJSON (Object o) =
-        User <$> o .: "reqCpf"
-             <*> o .: "reqUsername"
-             <*> o .: "password"
-    parseJSON _ = fail "Expected an object for User"
+    fromRow = CreatedUser <$> field <*> field <*> field <*> field <*> pure ""
 
 
+hashPassword :: String -> String
+hashPassword password = show (hashWith SHA256 (pack password))
 
 getTasks :: Connection -> ActionM ()
 getTasks conn = do
@@ -96,17 +95,22 @@ getTasks conn = do
     status status200
     S.json $ object ["tasks" .= tasks]
 
+getUserByCPF :: Connection -> String -> IO [CreatedUser]
+getUserByCPF conn cpf = query conn "SELECT userid, cpf, username, userhash FROM users WHERE cpf = ?" (Only cpf)
 
 createUser :: Connection -> ActionM ()
 createUser conn = do
-    (User _reqCpf _reqUsername _password) <- jsonData
+    (CreatedUser _ _cpf _username _ _password) <- jsonData
+    let hashedPassword = hashPassword _password
     let result = execute
                     conn
                     "INSERT INTO users (cpf, username, userhash) VALUES (?, ?, ?)"
-                    (_reqCpf, _reqUsername, _password)
+                    (_cpf, _username, hashedPassword)
     n <- liftIO result
     if n > 0
         then do
+            user <- liftIO $ getUserByCPF conn _cpf
             status status201
+            S.json $ object ["user" .= user]
         else do
             status status400

@@ -19,6 +19,7 @@ main :: IO ()
 main = do
   conn <- connect localPG
   putStrLn "Database connected!"
+  -- putStrLn (hashPassword "me238")
 
   routes conn
   putStrLn "Routes connected!"

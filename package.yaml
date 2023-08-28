@@ -26,6 +26,10 @@ dependencies:
 - aeson == 2.0.3.0
 - mtl
 - http-types
+- text
+- cryptonite
+- memory
+- bytestring
 
 ghc-options:
 - -Wall

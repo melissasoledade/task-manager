@@ -30,3 +30,5 @@ routes conn = scotty 8080 $ do
     html "Olá, mundo!"
 
   get "/tasks" $ getTasks conn
+
+  post "/cadastrar" $ createUser conn

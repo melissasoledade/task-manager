@@ -11,7 +11,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
       userId SERIAL PRIMARY KEY,
       cpf VARCHAR,
       username VARCHAR,
-      hash VARCHAR
+      userhash VARCHAR
     );
     CREATE TABLE IF NOT EXISTS tasks (
       taskId SERIAL PRIMARY KEY,
@@ -19,13 +19,13 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
       description TEXT,
       priority INT,
       taskStatus VARCHAR,
-      userId INT,
-      FOREIGN KEY (userId) REFERENCES users(userId)
+      taskUserId INT,
+      FOREIGN KEY (taskUserId) REFERENCES users(userId)
     );
-    INSERT INTO users (cpf, username, hash)
+    INSERT INTO users (cpf, username, userhash)
     VALUES ('12345678900', 'usuario1', 'hash1'),
            ('98765432100', 'usuario2', 'hash2');
-    INSERT INTO tasks (name, description, priority, taskStatus, userId)
+    INSERT INTO tasks (name, description, priority, taskStatus, taskUserId)
     VALUES ('Tarefa 1', 'Descrição da tarefa 1', 1, 'Em andamento', 1),
            ('Tarefa 2', 'Descrição da tarefa 2', 2, 'Concluída', 2);
   COMMIT;

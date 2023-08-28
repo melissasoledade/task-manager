@@ -1,0 +1,89 @@
+$(function() {
+  var url = "#{rawJS apiUrl}/tasks";
+  var getFunctionPatchVal = function(val, id) {
+    return function() {
+      $.ajax({
+          url: url + "/" + id,
+          type: 'PATCH',
+          data: JSON.stringify({
+            "taskStatus": val
+          }),
+          contentType: "application/json",
+          headers: {"x-userID": sessionStorage['session']},
+          success: function (data) {
+            getTasks();
+          },
+          error: function (data) {
+            console.log(data);
+            alert("ALGO DEU ERRADO!!");
+          }});
+    }
+  }
+
+  var getTasks = function() {
+    $.ajax({
+          url: url,
+          type: 'GET',
+          contentType: "application/json",
+          headers: {"X-userID": sessionStorage['session']},
+          success: function (data) {
+            $("##{rawJS taskListId}").empty();
+            data.tasks.forEach(function(item) {
+              var val = "FINALIZADO";
+              if (item.taskStatus == "FINALIZADO"){
+                val = "A FAZER";
+              }
+
+              var buttonStatus = $("<button></button>");
+              buttonStatus.text("MUDAR STATUS");
+              buttonStatus.css('color', 'black');
+              buttonStatus.attr('id', item.taskId);
+              buttonStatus.click(getFunctionPatchVal(val, item.taskId));
+
+              var listItemTask = $("<li></li>");
+              var strItem = item.name + '  -  ' + item.description + '  -  ' + item.priority + '  -  ' + item.taskStatus;
+
+              listItemTask.text(strItem);
+              listItemTask.append(buttonStatus);
+
+              $("##{rawJS taskListId}").append(listItemTask);
+            });
+          },
+          error: function (data) {
+            alert("ALGO DEU ERRADO!!!")
+            console.log("FALHA");
+          },
+        });
+    }
+
+  getTasks();
+
+  $("##{rawJS cadastroTaskFormId}").submit(function(event) {    
+    event.preventDefault();
+
+    var taskName = $("##{rawJS nomeFieldId}").val();
+    var taskPriority = $("##{rawJS priorityFieldId}").val();
+    var taskDescription = $("##{rawJS descriptionFieldId}").val();
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      contentType: "application/json",
+      data: JSON.stringify({
+        taskId: 0,
+        name: taskName,
+        description: taskDescription,
+        priority: taskPriority,
+        taskStatus: "A FAZER",
+        taskUserId: sessionStorage['session']
+      }),
+      headers: {"X-userID": sessionStorage['session']},
+      success: function (data) {
+        getTasks();
+      },
+      error: function (data) {
+        console.log("FALHA");
+      },
+    });
+  });
+});

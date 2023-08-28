@@ -1,0 +1,18 @@
+<div .masthead>
+    <div .container>
+        <div .row>
+            <h1 .header>
+                Sign up Page
+        <div .row>
+            <div .col-lg-12>
+                <div .bs-callout.bs-callout-info.well>
+                    <form .form-horizontal ##{cadastroFormId}>
+                        <div .field>
+                            <input ##{cpfFieldId} .inputValue placeholder="Insira seu CPF..." maxlength="11" required></input>
+                        <div .field>
+                            <input ##{usernameFieldId} .inputValue placeholder="Insira seu username..." required></input>
+                        <div .field>
+                            <input type="password" ##{passwordFieldId} .inputValue placeholder="Insira sua senha..." required></input>
+
+                        <button .btn.btn-primary type=submit>
+                           Cadastrar

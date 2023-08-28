@@ -1,0 +1,30 @@
+$(function() {
+  $("##{rawJS cadastroFormId}").submit(function(event) {
+    event.preventDefault();
+
+    var cpf = $("##{rawJS cpfFieldId}").val();
+    var username = $("##{rawJS usernameFieldId}").val();
+    var password = $("##{rawJS passwordFieldId}").val();
+    var url = "#{rawJS apiUrl}/cadastrar";
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      contentType: "application/json",
+      data: JSON.stringify({
+        cpf: cpf,
+        username: username,
+        password: password,
+        userHash: "",
+        userId: 0
+      }),
+      success: function (data) {
+        window.location.href = '@{HomeR}';
+      },
+      error: function (data) {
+        alert("ALGO DEU ERRADO");
+      },
+    });
+
+  });
+});

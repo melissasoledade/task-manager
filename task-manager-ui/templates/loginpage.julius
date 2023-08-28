@@ -1,0 +1,35 @@
+$(function() {
+  $("##{rawJS criarContaButtonId}").click(function(){
+    window.location.href = '@{CadastrarR}';
+  });
+  $("##{rawJS loginFormId}").submit(function(event) {
+    event.preventDefault();
+
+    var cpf = $("##{rawJS cpfFieldId}").val();
+    var username = $("##{rawJS usernameFieldId}").val();
+    var password = $("##{rawJS passwordFieldId}").val();
+    var url = "#{rawJS apiUrl}/login";
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      contentType: "application/json",
+      data: JSON.stringify({
+        cpf: cpf,
+        username: username,
+        password: password,
+        userHash: "",
+        userId: 0
+      }),
+      success: function (data) {
+        sessionStorage['session'] = data.userId;
+        window.location.href = '@{TasksR}';
+      },
+      error: function (data) {
+        console.log("Error generating session: " + data);
+        alert("LOGIN INVÁLIDO");
+      },
+    });
+
+  });
+});

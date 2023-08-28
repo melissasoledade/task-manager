@@ -1,0 +1,8 @@
+li {
+    line-height: 2em;
+    font-size: 16px
+}
+
+.inputValue {
+    color: black;
+}

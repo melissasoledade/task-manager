@@ -189,18 +189,17 @@ updateTask conn = do
 -- O JWT seria gerado com um set de <username, userid> + uma chave RSA
 getLoggedUser :: Connection -> ActionM ()
 getLoggedUser conn = do
-    maybeAuthHeader <- header "x-userid"
-    case maybeAuthHeader of
-            Just authHeaderValue -> do
-                let authUserId = read $ TL.unpack authHeaderValue :: Int
-                exists <- liftIO $ userExists conn authUserId
-                if exists
-                    then do
-                        status status200
-                        S.json $ object ["userId" .= (authUserId :: Int)]
-                    else do
-                        status status400
-                        S.json $ object ["error" .= ("Could not find user" :: String)]
-            Nothing -> do
-                status status400
-                S.json $ object ["error" .= ("Could not find header" :: String)]
+    (CreatedUser _ _cpfLogin _usernameLogin _ _passwordLogin) <- jsonData
+    userList <- liftIO $ getUserByCPF conn _cpfLogin
+    if null userList
+      then do
+        status status400
+        S.json $ object ["error" .= ("User not found" :: String)]
+      else if userhash $ head userList == hashPassword _passwordLogin
+        then do
+          status status200
+          S.json $ object ["userId" .= (show $ userId $ head userList :: String)]
+        else do
+          status status400
+          S.json $ object ["error" .= ("Login error" :: String)]
+  

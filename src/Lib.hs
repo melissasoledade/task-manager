@@ -6,6 +6,7 @@ module Lib
       createUser,
       hashPassword,
       createTask,
+      updateTask,
     ) where
 
 
@@ -23,7 +24,7 @@ import qualified Web.Scotty as S
 import Network.HTTP.Types.Status (Status, status200, status201, status204, status400)
 import Control.Monad.IO.Class (liftIO)
 
-
+-- Armazena uma tarefa
 data Task = Task
     { taskId :: Int
     , name :: String
@@ -33,9 +34,11 @@ data Task = Task
     , taskUserId :: Int
     }
 
+-- Instância para pegar dados do banco
 instance FromRow Task where
     fromRow = Task <$> field <*> field <*> field <*> field <*> field <*> field
 
+-- Converte Task para JSON
 instance ToJSON Task where
   toJSON (Task taskId name description priority taskStatus taskUserId) =
     object
@@ -47,6 +50,7 @@ instance ToJSON Task where
       , "taskUserId" .= taskUserId
       ]
 
+-- Converte JSON para Task
 instance FromJSON Task where
   parseJSON (Object o) =
     Task <$> o .:? "taskId" .!= 0
@@ -57,6 +61,7 @@ instance FromJSON Task where
       <*> o .: "taskUserId"
   parseJSON _ = fail "Expected an object for Task"
 
+-- Armazena usuário
 data CreatedUser = CreatedUser
     { userId :: Int
     , cpf :: String
@@ -65,6 +70,7 @@ data CreatedUser = CreatedUser
     , password :: String
     }
 
+-- Converte usuário para JSON
 instance ToJSON CreatedUser where
   toJSON (CreatedUser userId cpf username userhash password) =
     object
@@ -74,6 +80,7 @@ instance ToJSON CreatedUser where
       , "userhash" .= userhash
       ]
 
+-- Converte JSON para usuário
 instance FromJSON CreatedUser where
   parseJSON (Object o) =
     CreatedUser <$> o .:? "userId" .!= 0
@@ -83,24 +90,30 @@ instance FromJSON CreatedUser where
       <*> o .: "password"
   parseJSON _ = fail "Expected an object for CreatedUser"
 
+-- Instância para pegar dados do banco
 instance FromRow CreatedUser where
     fromRow = CreatedUser <$> field <*> field <*> field <*> field <*> pure ""
 
+-- Converte password em hash -> String
 hashPassword :: String -> String
 hashPassword password = show (hashWith SHA256 (pack password))
 
+-- GET de tarefas, lista todas as tarefas do banco
 getTasks :: Connection -> ActionM ()
 getTasks conn = do
     tasks <- (liftIO $ query_ conn "SELECT * FROM tasks") :: ActionM [Task]
     status status200
     S.json $ object ["tasks" .= tasks]
 
+-- Busca usuário por CPF
 getUserByCPF :: Connection -> String -> IO [CreatedUser]
 getUserByCPF conn cpf = query conn "SELECT userid, cpf, username, userhash FROM users WHERE cpf = ?" (Only cpf)
 
+-- Busca tarefa por userId
 getTaskByUserId :: Connection -> Int -> IO [Task]
 getTaskByUserId conn userId = query conn "SELECT taskid, name, description, priority, taskstatus, taskuserid FROM tasks WHERE taskuserid = ?" (Only userId)
 
+-- Cria um novo usuário. Armazena seus dados + hash de senha
 createUser :: Connection -> ActionM ()
 createUser conn = do
     (CreatedUser _ _cpf _username _ _password) <- jsonData
@@ -118,7 +131,7 @@ createUser conn = do
         else do
             status status400
 
-
+-- Cria uma nova tarefa
 createTask :: Connection -> ActionM ()
 createTask conn = do
     (Task _ _name _description _priority _taskStatus _taskUserId) <- jsonData
@@ -134,6 +147,37 @@ createTask conn = do
             S.json $ object ["tasks" .= tasks]
         else do
             status status400
+
+-- Verifica se uma tarefa existe pelo seu id
+taskExists :: Connection -> Int -> IO Bool
+taskExists conn _taskId = do
+  [Only n] <- query conn "SELECT COUNT(*) FROM tasks WHERE taskid = ?" (Only _taskId) :: IO [Only Int]
+  return $ n > 0
+
+-- Atualiza uma tarefa
+updateTask :: Connection -> ActionM ()
+updateTask conn = do
+    _taskId <- param "id" :: ActionM Int
+    _taskStatus <- param "taskStatus" :: ActionM String
+    exists <- liftIO $ taskExists conn _taskId
+    if not exists
+        then do
+            status status400
+            S.json $ object ["error" .= ("Task not found" :: String)]
+        else do
+            let result = execute
+                    conn
+                    "UPDATE tasks SET taskstatus = ? WHERE taskid = ?"
+                    (_taskStatus, _taskId)
+            n <- liftIO result
+            if n > 0
+                then do
+                    status status200
+                    S.json $ object ["message" .= (_taskStatus :: String)]
+                else do
+                    status status400
+                    S.json $ object ["error" .= ("Could not update task" :: String)]
+
 
 
 -- generateJwt :: CreatedUser -> String

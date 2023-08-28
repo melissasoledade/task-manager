@@ -19,7 +19,6 @@ main :: IO ()
 main = do
   conn <- connect localPG
   putStrLn "Database connected!"
-  -- putStrLn (hashPassword "me238")
 
   routes conn
   putStrLn "Routes connected!"
@@ -37,3 +36,5 @@ routes conn = scotty 8080 $ do
   post "/tasks" $ createTask conn
 
   -- post "/login" $ getLoggedUser conn
+
+  patch "/tasks/:id" $ updateTask conn

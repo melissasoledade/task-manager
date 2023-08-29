@@ -1,0 +1,24 @@
+<div .masthead>
+    <div .container>
+        <div .row>
+            <h1 .header>
+                Tasks Page
+        <div .row>
+            <div .col-lg-6>
+                <div .bs-callout.bs-callout-info.well>
+                    <form .form-horizontal ##{cadastroTaskFormId}>
+                        <div .field>
+                            <input ##{nomeFieldId} .inputValue placeholder="Insira o nome da task..." maxlength="11" required></input>
+                        <div .field>
+                            <input ##{priorityFieldId} .inputValue placeholder="Insira a prioridade da task..." required></input>
+                        <div .field>
+                            <input ##{descriptionFieldId} .inputValue placeholder="Insira a descrição da task..." required></input>
+
+                        <button .btn.btn-primary type=submit>
+                           Cadastrar
+
+           <div .col-lg-4.col-lg-offset-1>
+               <div .bs-callout.bs-callout-info>
+                   <small>
+                       Tasks
+                   <ul ##{taskListId}>

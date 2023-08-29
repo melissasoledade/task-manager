@@ -8,19 +8,25 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
   \connect $APP_DB_NAME $APP_DB_USER
   BEGIN;
 	CREATE TABLE IF NOT EXISTS users (
-      user_id SERIAL PRIMARY KEY,
+      userId SERIAL PRIMARY KEY,
       cpf VARCHAR,
       username VARCHAR,
-      hash VARCHAR
+      userhash VARCHAR
     );
     CREATE TABLE IF NOT EXISTS tasks (
-      task_id SERIAL PRIMARY KEY,
+      taskId SERIAL PRIMARY KEY,
       name VARCHAR,
       description TEXT,
       priority INT,
-      status VARCHAR,
-      user_id INT,
-      FOREIGN KEY (user_id) REFERENCES users(user_id)
+      taskStatus VARCHAR,
+      taskUserId INT,
+      FOREIGN KEY (taskUserId) REFERENCES users(userId)
     );
+    INSERT INTO users (cpf, username, userhash)
+    VALUES ('12345678900', 'usuario1', 'hash1'),
+           ('98765432100', 'usuario2', 'hash2');
+    INSERT INTO tasks (name, description, priority, taskStatus, taskUserId)
+    VALUES ('Tarefa 1', 'Descrição da tarefa 1', 1, 'Em andamento', 1),
+           ('Tarefa 2', 'Descrição da tarefa 2', 2, 'Concluída', 2);
   COMMIT;
 EOSQL

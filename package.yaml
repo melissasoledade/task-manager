@@ -22,6 +22,17 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base >= 4.7 && < 5
 - postgresql-simple == 0.6.4
+- scotty == 0.12.1
+- aeson == 2.0.3.0
+- mtl
+- http-types
+- text
+- cryptonite
+- memory
+- bytestring
+- jwt
+- time
+- wai-cors == 0.2.7
 
 ghc-options:
 - -Wall

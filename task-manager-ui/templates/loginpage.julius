@@ -29,6 +29,9 @@ $(function() {
         console.log("Error generating session: " + data);
         alert("LOGIN INVÁLIDO");
       },
+      xhrFields: {
+        withCredentials: true
+      },
     });
 
   });

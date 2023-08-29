@@ -32,6 +32,7 @@ dependencies:
 - bytestring
 - jwt
 - time
+- wai-cors == 0.2.7
 
 ghc-options:
 - -Wall

@@ -24,6 +24,9 @@ $(function() {
       error: function (data) {
         alert("ALGO DEU ERRADO");
       },
+      xhrFields: {
+        withCredentials: true
+      },
     });
 
   });

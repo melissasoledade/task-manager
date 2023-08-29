@@ -20,7 +20,7 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (pack)
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.FromRow
-import Web.Scotty (ActionM, jsonData, param, post, status, text, header)
+import Web.Scotty (ActionM, jsonData, param, post, status, text, header, addHeader)
 import qualified Web.Scotty as S
 import Network.HTTP.Types.Status (Status, status200, status201, status400)
 import Control.Monad.IO.Class (liftIO)
@@ -122,6 +122,10 @@ taskExists conn _taskId = do
 -- GET de tarefas, lista todas as tarefas do banco
 getTasks :: Connection -> ActionM ()
 getTasks conn = do
+    addHeader "Access-Control-Allow-Origin" "http://localhost:3000"
+    addHeader "Access-Control-Allow-Headers" "Origin, X-Requested-With, Content-Type, Accept, X-userID"
+    addHeader "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    addHeader "Access-Control-Allow-Credentials" "true"
     header <- verifyHeader conn
     if not header then do
         status status400
@@ -133,6 +137,10 @@ getTasks conn = do
 -- Cria um novo usuário. Armazena seus dados + hash de senha
 createUser :: Connection -> ActionM ()
 createUser conn = do
+    addHeader "Access-Control-Allow-Origin" "http://localhost:3000"
+    addHeader "Access-Control-Allow-Headers" "Origin, X-Requested-With, Content-Type, Accept, X-userID"
+    addHeader "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    addHeader "Access-Control-Allow-Credentials" "true"
     (CreatedUser _ _cpf _username _ _password) <- jsonData
     let hashedPassword = hashPassword _password
     let result = execute
@@ -150,6 +158,10 @@ createUser conn = do
 -- Cria uma nova tarefa
 createTask :: Connection -> ActionM ()
 createTask conn = do
+    addHeader "Access-Control-Allow-Origin" "http://localhost:3000"
+    addHeader "Access-Control-Allow-Headers" "Origin, X-Requested-With, Content-Type, Accept, X-userID"
+    addHeader "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    addHeader "Access-Control-Allow-Credentials" "true"
     header <- verifyHeader conn
     if not header then do
         status status400
@@ -171,6 +183,10 @@ createTask conn = do
 -- Atualiza uma tarefa
 updateTask :: Connection -> ActionM ()
 updateTask conn = do
+    addHeader "Access-Control-Allow-Origin" "http://localhost:3000"
+    addHeader "Access-Control-Allow-Headers" "Origin, X-Requested-With, Content-Type, Accept, X-userID"
+    addHeader "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    addHeader "Access-Control-Allow-Credentials" "true"
     header <- verifyHeader conn
     if not header then do
         status status400
@@ -212,6 +228,10 @@ verifyHeader conn = do
 -- a autenticação do usuário ao front
 getLoggedUser :: Connection -> ActionM ()
 getLoggedUser conn = do
+    addHeader "Access-Control-Allow-Origin" "http://localhost:3000"
+    addHeader "Access-Control-Allow-Headers" "Origin, X-Requested-With, Content-Type, Accept, X-userID"
+    addHeader "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    addHeader "Access-Control-Allow-Credentials" "true"
     (CreatedUser _ _cpfLogin _usernameLogin _ _passwordLogin) <- jsonData
     userList <- liftIO $ getUserByCPF conn _cpfLogin
     if null userList
